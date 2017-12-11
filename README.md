@@ -11,6 +11,7 @@ The code currently is programmed to be used for **semantic segmentation** tasks,
 ```python 
 import matplotlib.pyplot as plt
 import utility
+import os
 
 IMAGE_DIR_PATH = 'data/training/images'
 MASK_DIR_PATH = 'data/training/masks'
