@@ -2,9 +2,9 @@
 
 This is an example input pipeline function for Tensorflow, which uses the Dataset API.
 
-I have observed that generally importing your own data into tensorflow for Deep learning/Machine learning problems is...well...a problem, this code aims to simplify that, and get you up and running with your deep learning projects, use the provided helper functions alongwith the necessary changes needed for your specific project.
+I have observed that generally importing your own data into tensorflow for Deep learning/Machine learning problems is...well...a problem, this code aims to simplify that, and get you up and running with your deep learning projects, use the provided helper functions along with the necessary changes needed for your specific project.
 
-The code currently is programmed to be used for **semantic segmentation** tasks, where the input is an image, and the label is a binary mask image.
+The code currently is programmed to be used for **semantic segmentation** tasks, where the input is an image, and the label is a binary mask image. You would need to modify the '_parse_data' function in the code for your own examples, and also the image dimensions.
 
 # Example use:
 
