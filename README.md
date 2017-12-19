@@ -10,6 +10,7 @@ The code currently is programmed to be used for **semantic segmentation** tasks,
 
 ```python 
 import matplotlib.pyplot as plt
+import tensorflow as tf
 import utility
 import os
 
