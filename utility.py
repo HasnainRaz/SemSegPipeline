@@ -2,22 +2,7 @@ import tensorflow as tf
 from tensorflow.contrib.data import Dataset, Iterator
 import random
 
-
-def augmentation_chooser():
-    '''Returns a list of length 6, for use as the params placeholder for
-    the augmented_dataset function, just feed the list returned by this
-    function into your params place holder while training.'''
-    aug_to_apply = [not bool(random.randint(0, 7)),
-                    not bool(random.randint(0, 3)),
-                    not bool(random.randint(0, 3)),
-                    not bool(random.randint(0, 3)),
-                    not bool(random.randint(0, 1)),
-                    not bool(random.randint(0, 1))]
-
-    return aug_to_apply
-
-
-def augment_dataset(images, masks, params, crop_size, image_size, batch_size):
+def augment_dataset(images, masks, crop_size, image_size, batch_size):
     '''
     Returns Augmented images with either: random_crop, random_brightness,
     random_contrast, random_saturation, random_flip vertically, random_flip
@@ -27,6 +12,9 @@ def augment_dataset(images, masks, params, crop_size, image_size, batch_size):
         masks: Batch of mask images, shape = [batch, width, height, channels]
         params: Placeholder tensor to define which random perturbations to apply
                 out of the 6 mentioned above, shape = [6]
+        crop_size: Size to crop an image
+        image_size: Final size of the images to return
+        batch_size: Number of samples in a batch
     Returns:
         images: Augmented images with any combination of augmentations applied
         masks: Segmentation masks flipped/cropped in accord with their image
@@ -34,25 +22,32 @@ def augment_dataset(images, masks, params, crop_size, image_size, batch_size):
 
     # Get seed to sync all random functions
     seed = random.random()
+    cond_crop_image = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32, seed=seed), tf.bool)
+    cond_crop_mask = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32, seed=seed), tf.bool)
+    cond_brightness = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32), tf.bool)
+    cond_contrast = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32), tf.bool)
+    cond_saturation = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32), tf.bool)
+    cond_flip_lr = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32), tf.bool)
+    cond_flip_ud = tf.cast(tf.random_uniform([], maxval=2, dtype=tf.int32), tf.bool)
     # Apply same cropping on image and mask with the help of seed,
     # if true in params placeholder tensor
-    images = tf.cond(params[0], lambda: tf.random_crop(
+    images = tf.cond(cond_crop_image, lambda: tf.random_crop(
         images, [batch_size, int(crop_size[0] * 0.85), int(crop_size[1] * 0.85), 3], seed=seed), lambda: tf.identity(images))
-    masks = tf.cond(params[0], lambda: tf.random_crop(
+    masks = tf.cond(cond_crop_mask, lambda: tf.random_crop(
         masks, [batch_size, int(crop_size[0] * 0.85), int(crop_size[1] * 0.85), 1], seed=seed), lambda: tf.identity(masks))
 
     # Apply random brightness changes if True in params placeholder tensor
-    images = tf.cond(params[1], lambda: tf.image.random_brightness(
+    images = tf.cond(cond_brightness, lambda: tf.image.random_brightness(
         images, 0.01), lambda: tf.identity(images))
-
+        
     # Apply random contrast changes if True in params
-    images = tf.cond(params[2], lambda: tf.image.random_contrast(
+    images = tf.cond(cond_contrast, lambda: tf.image.random_contrast(
         images, 0.2, 1.8), lambda: tf.identity(images))
 
     # Saturation doesn't work on image batches, only single images,
     # Use map_fn to apply on batch
     def sat(x): return tf.image.random_saturation(x, 0.2, 1.8)
-    images = tf.cond(params[3], lambda: tf.map_fn(
+    images = tf.cond(cond_saturation, lambda: tf.map_fn(
         sat, images), lambda: tf.identity(images))
 
     # Define tf.identity equivalent which returns two inputs unchanged
@@ -74,7 +69,7 @@ def augment_dataset(images, masks, params, crop_size, image_size, batch_size):
         return images, masks
 
     # Apply horizontal flip
-    images, masks = tf.cond(params[4], lambda: flip_l_r(
+    images, masks = tf.cond(cond_flip_lr, lambda: flip_l_r(
         images, masks), lambda: unchanged(images, masks))
 
     # Apply random vertical flip if active in params,
@@ -92,7 +87,7 @@ def augment_dataset(images, masks, params, crop_size, image_size, batch_size):
         return images, masks
 
     # Apply the vertical flip
-    images, masks = tf.cond(params[5], lambda: flip_l_r(
+    images, masks = tf.cond(cond_flip_ud, lambda: flip_l_r(
         images, masks), lambda: unchanged(images, masks))
 
     # Finally resize the images to given width and height
@@ -103,7 +98,7 @@ def augment_dataset(images, masks, params, crop_size, image_size, batch_size):
 
 
 def _normalize_data(image, mask):
-    '''Returns image and mask divided by 255 (Vals in range 0.0 - 1.0)'''
+    '''Returns image and mask divided by 255 (vals in range 0.0 - 1.0)'''
     image = tf.cast(image, tf.float32)
     image = image / 255.0
 
@@ -119,8 +114,8 @@ def _parse_data(image_paths, mask_paths):
     image_content = tf.read_file(image_paths)
     mask_content = tf.read_file(mask_paths)
 
-    images = tf.image.decode_png(image_content, channels=0)
-    masks = tf.image.decode_png(mask_content, channels=0)
+    images = tf.image.decode_png(image_content, channels=3)
+    masks = tf.image.decode_png(mask_content, channels=1)
 
     return images, masks
 
@@ -155,10 +150,10 @@ def data_batch(image_paths, mask_paths, batch_size=4, num_threads=2):
 
     # Normalize to be in range 0-1
     data = data.map(
-        _normalize_data, num_threads=num_threads, output_buffer_size=batch_size)
+        _normalize_data, num_threads=num_threads, output_buffer_size=6 * batch_size)
 
     # Shuffle the data queue
-    data = data.shuffle(batch_size * 2)
+    data = data.shuffle(batch_size)
 
     # Create a batch of data
     data = data.batch(batch_size)
