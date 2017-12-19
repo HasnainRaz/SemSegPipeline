@@ -24,7 +24,8 @@ plt.ioff()
 image_paths = [os.path.join(IMAGE_DIR_PATH, x) for x in os.listdir(IMAGE_DIR_PATH) if x.endswith('.png')]
 mask_paths = [os.path.join(MASK_DIR_PATH, x) for x in os.listdir(MASK_DIR_PATH) if x.endswith('.png')]
 
-# Where image_paths[0] = '/data/training/images/image_0.png' and mask_paths[0] = 'data/training/masks/image_0_mask.png'
+# Where image_paths[0] = '/data/training/images/image_0.png' 
+# And mask_paths[0] = 'data/training/masks/image_0_mask.png'
 
 # Parse the images and masks, and return the data in batches
 data, init_op = utility.data_batch(image_paths, mask_paths, params)
