@@ -27,18 +27,11 @@ mask_paths = [os.path.join(MASK_DIR_PATH, x) for x in os.listdir(MASK_DIR_PATH) 
 # Where image_paths[0] = '/data/training/images/image_0.png' 
 # And mask_paths[0] = 'data/training/masks/image_0_mask.png'
 
-# Parse the images and masks, and return the data in batches
-data, init_op = utility.data_batch(image_paths, mask_paths, params)
+# Parse the images and masks, and return the data in batches, augmented optionally
+data, init_op = utility.data_batch(image_paths, mask_paths, augment=True, batch_size=BATCH_SIZE)
 # Get the image and mask op from the returned dataset
-image_tensor, mask_tensor = data
+aug_image_tensor, aug_mask_tensor = data
 
-# Feed the dataset in for augmentation
-aug_image_tensor, aug_mask_tensor = utility.augment_dataset(
-                                    images=image_tensor,
-                                    masks=mask_tensor,
-                                    crop_size=[380, 540],
-                                    image_size=[256, 320],
-                                    batch_size=BATCH_SIZE)
 
 with tf.Session() as sess:
   sess.run(init_op)
