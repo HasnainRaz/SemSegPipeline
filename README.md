@@ -4,7 +4,10 @@ This is an example input pipeline function for Tensorflow, which uses the Datase
 
 I have observed that generally importing your own data into tensorflow for Deep learning/Machine learning problems is...well...a problem, this code aims to simplify that, and get you up and running with your deep learning projects, use the provided helper functions along with the necessary changes needed for your specific project.
 
-The code currently is programmed to be used for **semantic segmentation** tasks, where the input is an image, and the label is a binary mask image. You would need to modify the '_parse_data' function in the code for your own examples, along with the augmentation functions.
+# Note
+This code currently is written to be used for **semantic segmentation** tasks, where the input is an image, and the label is a binary mask image. You would need to modify the '_parse_data' function in the code for your own examples, along with the augmentation functions if you are trying to load images and/or labels of different types (not images).
+
+This code file is meant as a guide for anyone stuck at functions for loading your own data into Tensorflow, generally most problems in ML will follow the skeleton of this example, where you load image and labels (here label is just another image) -> you will preprocess this loaded data -> batch it -> return an iterator over it.
 
 # Example use:
 
