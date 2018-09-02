@@ -4,9 +4,6 @@ This is an input pipeline function for Tensorflow, which uses the Dataset API, a
 
 I have observed that generally importing your own data into tensorflow for deep learning/machine learning problems is...well...a problem, this code aims to simplify that, and get you up and running with your deep learning projects. The code is simple and readable, so you can easily edit and extend it for your own projects.
 
-# Note
-This code file is meant as a guide for anyone stuck at functions for loading your own data into Tensorflow, generally most problems in ML will follow the skeleton of this example, where you load image and labels (here label is just another image) -> you will preprocess this loaded data -> batch it -> return an iterator over it.
-
 # Augmentation Examples:
 Following shows the same image, loaded with the pipeline, note the different augmentations (birghtness, contrast, saturation, cropping and flipping changes, and the masks are changed accordingly. Also, the color mask is correctly one hot encoded and each one hot map is separately shown). The example image is taken from the KITTI road segmentation dataset, the three classes are ignore, background and road.
 
@@ -61,4 +58,13 @@ with tf.Session() as sess:
 
 ```
 
-Ideas for extending this are welcome, also, if you find a bug, make a pull request or create an issue.
+# Note
+This code file is meant as a guide for anyone stuck at functions for loading your own data into Tensorflow, generally most problems in ML will follow the skeleton of this example, where you load image and labels (here label is just another image) -> you will preprocess this loaded data -> batch it -> return an iterator over it.
+
+# Contributing
+Ideas for extending this are welcome.
+If you would like to contribute:
+1. Clone the repo.
+2. Create your own branch.
+3. Make your changes.
+4. Commit and make a pull request.
