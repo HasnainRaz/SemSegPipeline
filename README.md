@@ -8,7 +8,7 @@ I have observed that generally importing your own data into tensorflow for deep 
 This code file is meant as a guide for anyone stuck at functions for loading your own data into Tensorflow, generally most problems in ML will follow the skeleton of this example, where you load image and labels (here label is just another image) -> you will preprocess this loaded data -> batch it -> return an iterator over it.
 
 # Augmentation Examples:
-Following shows the same image, loaded with the pipeline, note the different augmentations (birghtness, contrast, saturation, cropping and flipping changes, and the masks are changed accordingly. Also, the color mask is correctly one hot decoded and each one hot map is separately shown). The example image is taken from the KITTI road segmentation dataset, the three classes are ignore, background and road.
+Following shows the same image, loaded with the pipeline, note the different augmentations (birghtness, contrast, saturation, cropping and flipping changes, and the masks are changed accordingly. Also, the color mask is correctly one hot encoded and each one hot map is separately shown). The example image is taken from the KITTI road segmentation dataset, the three classes are ignore, background and road.
 
 ![Exmaple](https://user-images.githubusercontent.com/4294680/44959415-13a79780-aeee-11e8-8366-0eed590b3c2d.png)
 
