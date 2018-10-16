@@ -2,23 +2,18 @@ import tensorflow as tf
 import random
 
 class DataLoader(object):
+    """A TensorFlow Dataset API based loader for semantic segmentation problems."""
 
-    def __init__(self, image_paths, mask_paths, image_extension, image_size, \
-                 crop_size=None, channels=[3, 3], palette=None,  seed=None):
+    def __init__(self, image_paths, mask_paths, image_size, crop_percent=0.8, channels=[3, 3], palette=None, seed=None):
         """
         Initializes the data loader object
         Args:
             image_paths: List of paths of train images.
             mask_paths: List of paths of train masks (segmentation masks)
-            image_extension: The file format of images, either 'jpeg' or 'png'.
             image_size: Tuple of (Height, Width), the final height 
                         to resize images to.
-            crop_size: Tuple of (crop_height, crop_width), the size
-                       to randomly crop out from the original image.
-                       Only needed if augmentation is enabled.
-                       Note: crop_size can be larger than image_size
-                       since orignal image is first cropped and then
-                       resized.
+            crop_percent: Float in the range 0-1, defining percentage of image to randomly
+                          crop.
             channels: List of ints, first element is number of channels in images,
                       second is the number of channels in the mask image (needed to
                       correctly read the images into tensorflow.)
@@ -36,10 +31,9 @@ class DataLoader(object):
         """
         self.image_paths = image_paths
         self.mask_paths = mask_paths
-        self.image_extension = image_extension
         self.palette = palette
         self.image_size = image_size
-        self.crop_size = crop_size
+        self.crop_percent = tf.constant(crop_percent, tf.float32)
         self.channels = channels
         if seed is None:
             self.seed = random.randint(0, 1000)
@@ -88,11 +82,15 @@ class DataLoader(object):
         cond_crop_mask = tf.cast(tf.random_uniform(
             [], maxval=2, dtype=tf.int32, seed=self.seed), tf.bool)
 
-        image = tf.cond(cond_crop_image, lambda: tf.random_crop(
-            image, [self.crop_size[0], self.crop_size[1], self.channels[0]], seed=self.seed), lambda: tf.identity(image))
-        mask = tf.cond(cond_crop_mask, lambda: tf.random_crop(
-            mask, [self.crop_size[0], self.crop_size[1], self.channels[1]], seed=self.seed), lambda: tf.identity(mask))
 
+        shape = tf.cast(tf.shape(image), tf.float32)
+        h = tf.cast(shape[0] * self.crop_percent, tf.int32)
+        w = tf.cast(shape[1] * self.crop_percent, tf.int32)
+
+        image = tf.cond(cond_crop_image, lambda: tf.random_crop(
+            image, [h, w, self.channels[0]], seed=self.seed), lambda: tf.identity(image))
+        mask = tf.cond(cond_crop_mask, lambda: tf.random_crop(
+            mask, [h, w, self.channels[1]], seed=self.seed), lambda: tf.identity(mask))
 
         return image, mask
 
@@ -103,16 +101,6 @@ class DataLoader(object):
         """
         image = tf.image.random_flip_left_right(image, seed=self.seed)
         mask = tf.image.random_flip_left_right(mask, seed=self.seed)
-
-        return image, mask
-
-
-    def _normalize_data(self, image, mask):
-        """
-        Normalize image and mask within range 0-1.
-        """
-        image = tf.cast(image, tf.float32)
-        image = image / 255.0
 
         return image, mask
 
@@ -141,15 +129,8 @@ class DataLoader(object):
         image_content = tf.read_file(image_paths)
         mask_content = tf.read_file(mask_paths)
 
-        if self.image_extension == 'png':
-            images = tf.image.decode_png(image_content, channels=self.channels[0])
-            masks = tf.image.decode_png(mask_content, channels=self.channels[1])
-        elif self.image_extension == 'jpeg':
-            images = tf.image.decode_jpeg(image_content, channels=self.channels[0])
-            masks = tf.image.decode_jpeg(mask_content, channels=self.channels[1])
-        else:
-            raise ValueError("Specified image extension is not supported,\
-                              please use either jpeg or png images")
+        images = tf.image.decode_image(image_content, channels=self.channels[0])
+        masks = tf.image.decode_image(mask_content, channels=self.channels[1])
 
         return images, masks
 
@@ -174,10 +155,10 @@ class DataLoader(object):
         Inputs:
             augment: Boolean, whether to augment data or not.
             shuffle: Boolean, whether to shuffle data in buffer or not.
-            batch_size: Number of images/masks in each batch returned.
             one_hot_encode: Boolean, whether to one hot encode the mask image or not.
                             Encoding will done according to the palette specified when
                             initializing the object.
+            batch_size: Number of images/masks in each batch returned.
             num_threads: Number of parallel subprocesses to load data.
             buffer: Number of images to prefetch in buffer.
         Returns:
@@ -228,10 +209,6 @@ class DataLoader(object):
 
         # Batch the data
         data = data.batch(batch_size)
-
-        # Normalize
-        data = data.map(self._normalize_data,
-                        num_parallel_calls=num_threads).prefetch(buffer)
 
         if shuffle:
             data = data.shuffle(buffer)
