@@ -17,6 +17,7 @@ Following shows the same image, loaded with the pipeline, note the different aug
 import matplotlib.pyplot as plt
 import tensorflow as tf
 from dataloader import DataLoader
+import numpy as np
 import os
 
 plt.ioff()
