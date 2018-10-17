@@ -5,7 +5,8 @@ This is an input pipeline function for Tensorflow, which uses the Dataset API, a
 I have observed that generally importing your own data into tensorflow for deep learning/machine learning problems is...well...a problem, this code aims to simplify that, and get you up and running with your deep learning projects. The code is simple and readable, so you can easily edit and extend it for your own projects.
 
 # Augmentation Examples:
-Following shows the same image, loaded with the pipeline, note the different augmentations (birghtness, contrast, saturation, cropping and flipping changes, and the masks are changed accordingly. Also, the color mask is correctly one hot encoded and each one hot map is separately shown). The example image is taken from the KITTI road segmentation dataset, the three classes are ignore, background and road.
+Following shows the same image, loaded with the pipeline, note the different augmentations (birghtness, contrast, saturation, cropping and flipping changes, and the masks are changed accordingly. The example image is taken from the PASCAL VOC dataset.
+
 <p align="center">
 <img width="728" alt="screenshot 2018-10-16 at 22 56 50" src="https://user-images.githubusercontent.com/4294680/47047263-6932bd80-d197-11e8-8956-1083eb17aca0.png">
 </p>
