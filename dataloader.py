@@ -207,11 +207,11 @@ class DataLoader(object):
                 raise ValueError('No Palette for one-hot encoding specified in the data loader!')
             data = data.map(self._one_hot_encode, num_parallel_calls=num_threads).prefetch(buffer)
 
-        # Batch the data
-        data = data.batch(batch_size)
-
         if shuffle:
             data = data.shuffle(buffer)
+        
+        # Batch the data
+        data = data.batch(batch_size)
 
         # Create iterator
         iterator = tf.data.Iterator.from_structure(
