@@ -1,5 +1,5 @@
 # SemSeg Pipeline
-This is a efficient semantic segmentaiton data input pipeline function for Tensorflow 2.
+This is an efficient semantic segmentaiton data input pipeline function for Tensorflow 2.
 
 The pipeline is made to be multithreaded, and uses the tf data API to prerocess the image and segmentation masks with augmentations on the CPU.
 
