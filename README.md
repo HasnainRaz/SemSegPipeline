@@ -46,7 +46,7 @@ dataset = dataset.data_batch(batch_size=BATCH_SIZE
                              shuffle=True)
 
 # Initialize the data queue
-for image, mask in daatset:      
+for image, mask in dataset:      
   # Do whatever you want now, like creating a feed dict and train your models,
   # You can also directly feed in the tf tensors to your models to avoid using a feed dict.
 
