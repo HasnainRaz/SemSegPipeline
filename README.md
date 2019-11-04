@@ -15,12 +15,8 @@ Following shows the same image, loaded with the pipeline, note the different aug
 
 ```python 
 from dataloader import DataLoader
-import matplotlib.pyplot as plt
 import tensorflow as tf
-import numpy as np
 import os
-
-plt.ioff()
 
 IMAGE_DIR_PATH = 'data/training/images'
 MASK_DIR_PATH = 'data/training/masks'
