@@ -193,9 +193,10 @@ class DataLoader(object):
             data = data.map(self._one_hot_encode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 
         if shuffle:
-            data = data.shuffle(random.randint(0, len(self.image_paths)))
-        
-        # Batch the data
-        data = data.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+            # Prefetch, shuffle then batch
+            data = data.prefetch(tf.data.experimental.AUTOTUNE).shuffle(random.randint(0, len(self.image_paths))).batch(batch_size)
+        else:
+            # Batch and prefetch
+            data = data.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
 
         return data
