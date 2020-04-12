@@ -10,8 +10,7 @@ class DataLoader(object):
         Args:
             image_paths: List of paths of train images.
             mask_paths: List of paths of train masks (segmentation masks)
-            image_size: Tuple of (Height, Width), the final height 
-                        of the loaded images.
+            image_size: Int, the final height, width of the loaded images.
             channels: List of ints, first element is number of channels in images,
                       second is the number of channels in the mask image (needed to
                       correctly read the images into tensorflow.)
