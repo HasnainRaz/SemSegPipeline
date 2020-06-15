@@ -17,10 +17,10 @@ class DataLoader(object):
         Args:
             image_paths: List of paths of train images.
             mask_paths: List of paths of train masks (segmentation masks)
-            image_size: Int, the final height, width of the loaded images.
-            channels: List of ints, first element is number of channels in images,
+            image_size: Tuple, the final height, width of the loaded images.
+            channels: Tuple of ints, first element is number of channels in images,
                       second is the number of channels in the mask image (needed to
-                      correctly read the images into tensorflow.)
+                      correctly read the images into tensorflow and apply augmentations)
             crop_percent: Float in the range 0-1, defining percentage of image 
                           to randomly crop.
             palette: A list of RGB pixel values in the mask. If specified, the mask
