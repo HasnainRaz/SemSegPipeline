@@ -90,17 +90,16 @@ class DataLoader(object):
         """
         cond_crop_image = tf.cast(tf.random.uniform(
             [], maxval=2, dtype=tf.int32, seed=self.seed), tf.bool)
-        cond_crop_mask = tf.cast(tf.random.uniform(
-            [], maxval=2, dtype=tf.int32, seed=self.seed), tf.bool)
 
         shape = tf.cast(tf.shape(image), tf.float32)
         h = tf.cast(shape[0] * self.crop_percent, tf.int32)
         w = tf.cast(shape[1] * self.crop_percent, tf.int32)
 
-        image = tf.cond(cond_crop_image, lambda: tf.image.random_crop(
-            image, [h, w, self.channels[0]], seed=self.seed), lambda: tf.identity(image))
-        mask = tf.cond(cond_crop_mask, lambda: tf.image.random_crop(
-            mask, [h, w, self.channels[1]], seed=self.seed), lambda: tf.identity(mask))
+        comb_tensor = tf.concat([image, mask], axis=2)
+        
+        comb_tensor = tf.cond(cond_crop_image, lambda: tf.image.random_crop(
+            comb_tensor, [h, w, self.channels[0] + self.channels[1]], seed=self.seed), lambda: tf.identity(comb_tensor))
+        image, mask = tf.split(comb_tensor, [self.channels[0], self.channels[1]], axis=2)
 
         return image, mask
 
@@ -109,8 +108,9 @@ class DataLoader(object):
         """
         Randomly flips image and mask left or right in accord.
         """
-        image = tf.image.random_flip_left_right(image, seed=self.seed)
-        mask = tf.image.random_flip_left_right(mask, seed=self.seed)
+        comb_tensor = tf.concat([image, mask], axis=2)
+        comb_tensor = tf.image.random_flip_left_right(comb_tensor, seed=self.seed)
+        image, mask = tf.split(comb_tensor, [self.channels[0], self.channels[1]], axis=2)
 
         return image, mask
 
@@ -181,7 +181,7 @@ class DataLoader(object):
 
             image_f, mask_f = self._resize_data(image_f, mask_f)
             return image_f, mask_f
-        return tf.py_function(_augmentation_func, [image, mask], [tf.float32, tf.float32])
+        return tf.py_function(_augmentation_func, [image, mask], [tf.float32, tf.uint8])
 
     def data_batch(self, batch_size, shuffle=False):
         """
@@ -212,3 +212,4 @@ class DataLoader(object):
             data = data.batch(batch_size).prefetch(AUTOTUNE)
 
         return data
+
