@@ -1,10 +1,17 @@
+from typing import List, Tuple
+
 import tensorflow as tf
 import random
+
+AUTOTUNE = tf.data.experimental.AUTOTUNE
+
 
 class DataLoader(object):
     """A TensorFlow Dataset API based loader for semantic segmentation problems."""
 
-    def __init__(self, image_paths, mask_paths, image_size, channels=[3, 3], crop_percent=None, palette=None, seed=None):
+    def __init__(self, image_paths: List[str], mask_paths: List[str], image_size: Tuple[int],
+                 channels: Tuple[int] = (3, 3), crop_percent: float = None, seed: int = None,
+                 augment: bool = True, compose: bool = False, one_hot_encoding: bool = False, palette=None):
         """
         Initializes the data loader object
         Args:
@@ -25,6 +32,9 @@ class DataLoader(object):
         self.mask_paths = mask_paths
         self.palette = palette
         self.image_size = image_size
+        self.augment = augment
+        self.compose = compose
+        self.one_hot_encoding = one_hot_encoding
         if crop_percent is not None:
             if 0.0 < crop_percent <= 1.0:
                 self.crop_percent = tf.constant(crop_percent, tf.float32)
@@ -109,8 +119,8 @@ class DataLoader(object):
         """
         Resizes images to specified size.
         """
-        image = tf.image.resize(image, [self.image_size, self.image_size])
-        mask = tf.image.resize(mask, [self.image_size, self.image_size], method='nearest')
+        image = tf.image.resize(image, self.image_size)
+        mask = tf.image.resize(mask, self.image_size, method="nearest")
         
         return image, mask
 
@@ -142,7 +152,38 @@ class DataLoader(object):
         
         return image, one_hot_map
 
-    def data_batch(self, batch_size, augment, shuffle=False, one_hot_encode=False):
+    @tf.function
+    def _map_function(self, images_path, masks_path):
+        image, mask = self._parse_data(images_path, masks_path)
+
+        def _augmentation_func(image_f, mask_f):
+            if self.augment:
+                if self.compose:
+                    image_f, mask_f = self._corrupt_brightness(image_f, mask_f)
+                    image_f, mask_f = self._corrupt_contrast(image_f, mask_f)
+                    image_f, mask_f = self._corrupt_saturation(image_f, mask_f)
+                    image_f, mask_f = self._crop_random(image_f, mask_f)
+                    image_f, mask_f = self._flip_left_right(image_f, mask_f)
+                else:
+                    options = [self._corrupt_brightness,
+                               self._corrupt_contrast,
+                               self._corrupt_saturation,
+                               self._crop_random,
+                               self._flip_left_right]
+                    augment_func = random.choice(options)
+                    image_f, mask_f = augment_func(image_f, mask_f)
+
+            if self.one_hot_encoding:
+                if self.palette is None:
+                    raise ValueError('No Palette for one-hot encoding specified in the data loader! \
+                                      please specify one when initializing the loader.')
+                image_f, mask_f = self._one_hot_encode(image_f, mask_f)
+
+            image_f, mask_f = self._resize_data(image_f, mask_f)
+            return image_f, mask_f
+        return tf.py_function(_augmentation_func, [image, mask], [tf.float32, tf.float32])
+
+    def data_batch(self, batch_size, shuffle=False):
         """
         Reads data, normalizes it, shuffles it, then batches it, returns a
         the next element in dataset op and the dataset initializer op.
@@ -161,41 +202,13 @@ class DataLoader(object):
         data = tf.data.Dataset.from_tensor_slices((self.image_paths, self.mask_paths))
 
         # Parse images and labels
-        data = data.map(self._parse_data, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-        # If augmentation is to be applied
-        if augment:
-            data = data.map(self._corrupt_brightness,
-                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-            data = data.map(self._corrupt_contrast,
-                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-            data = data.map(self._corrupt_saturation,
-                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-            if self.crop_percent is not None:
-                data = data.map(self._crop_random, 
-                                num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-            data = data.map(self._flip_left_right,
-                            num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-        # Resize to smaller dims for speed
-        data = data.map(self._resize_data, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-
-        # One hot encode the mask
-        if one_hot_encode:
-            if self.palette is None:
-                raise ValueError('No Palette for one-hot encoding specified in the data loader! \
-                                  please specify one when initializing the loader.')
-            data = data.map(self._one_hot_encode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        data = data.map(self._map_function, num_parallel_calls=AUTOTUNE)
 
         if shuffle:
             # Prefetch, shuffle then batch
-            data = data.prefetch(tf.data.experimental.AUTOTUNE).shuffle(random.randint(0, len(self.image_paths))).batch(batch_size)
+            data = data.prefetch(AUTOTUNE).shuffle(random.randint(0, len(self.image_paths))).batch(batch_size)
         else:
             # Batch and prefetch
-            data = data.batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
+            data = data.batch(batch_size).prefetch(AUTOTUNE)
 
         return data
